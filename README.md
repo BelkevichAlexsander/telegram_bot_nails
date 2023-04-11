@@ -55,16 +55,7 @@ make generate
 ```bash
 make migrate
 ```
-#### 4.1. Запуск проекта (1 вариант)
-```text
-Docker
-Если операционная система Windows изменить в корневом файле (Dockerfile),
-а именно 8 строку:
-CMD [ "python3", "main.py" ]
-на 
-CMD [ "python", "main.py" ] 
-и запустить команду ниже
-```
+#### 4.1. Запуск проекта (1 вариант Docker)
 ```bash
 docker-compose up -d                       
 ```
