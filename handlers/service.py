@@ -4,9 +4,10 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
-from bot_config import bot, ID
+from bot_config import bot, ID, async_session
 from calendar_async import simple_cal_callback, SimpleCalendar
-from database import sqlite_db
+from database import db
+from database.db import Applications
 from inline import time_ikb
 from keyboard import keyboard_menu
 
@@ -15,6 +16,7 @@ class FSMClient(StatesGroup):
     """
     Машина состояний для формирования заказа
     """
+
     state_process = State()
     state_date = State()
     state_time = State()
@@ -35,21 +37,20 @@ async def set_service(callback_query: types.CallbackQuery, state: FSMContext):
 
     # Запись данных в "state".
     async with state.proxy() as data:
-        data['state_process'] = callback_query.data
+        data["state_process"] = callback_query.data
 
     # Здесь выполняется сброс "state". Календарь начинает работать.
     await state.reset_state(with_data=False)
 
-    await callback_query.message.answer("Выберите дату:",
-                                        reply_markup=await SimpleCalendar().start_calendar()
-                                        )
+    await callback_query.message.answer(
+        "Выберите дату:", reply_markup=await SimpleCalendar().start_calendar()
+    )
 
 
 # @dp.callback_query_handler(simple_cal_callback.filter())
-async def process_dialog_calendar(callback_query: types.CallbackQuery,
-                                  callback_data: dict,
-                                  state: FSMContext
-                                  ):
+async def process_dialog_calendar(
+    callback_query: types.CallbackQuery, callback_data: dict, state: FSMContext
+):
     """
     Отлавливает дату выбранную пользователем из календаря,
     стартует машину состояния для продолжения сохранения данных,
@@ -59,45 +60,44 @@ async def process_dialog_calendar(callback_query: types.CallbackQuery,
     :param state: FSMContext
     :return: callback_query.message.answer
     """
-    selected, date = await SimpleCalendar().process_selection(callback_query, callback_data)
+    selected, date = await SimpleCalendar().process_selection(
+        callback_query, callback_data
+    )
     if selected:
         # Снова запускаю "state"
         await FSMClient.state_date.set()
 
         # Запись даты в "state"
         async with state.proxy() as data:
-            data['state_date'] = date.strftime("%d.%m.%Y")
+            data["state_date"] = date.strftime("%d.%m.%Y")
 
         # Получение данных о записях в определенную дату
-        time_applications: list = await sqlite_db.select_date_application(date.strftime("%d.%m.%Y"))
+        time_applications = await db.select_date_application(
+            date.strftime("%d.%m.%Y"), async_session=async_session
+        )
+        only_time: list = [x.time for x in time_applications.scalars()]
+
         # Глубокая копия для оптимизации удаления связей Dictionary с памятью
         time_check_btn: dict = copy.deepcopy(time_ikb.buttons_time_check)
         time_btn: types.InlineKeyboardMarkup = copy.deepcopy(time_ikb.buttons_time)
 
-        if len(time_applications) == 4:
+        if len(only_time) >= 4:
             await callback_query.message.answer(
                 text=f'Свободного времени {date.strftime("%d.%m.%Y")} нет \n'
-                     f'Пожалуйста запишитесь на другой день.',
-                reply_markup=keyboard_menu.main_menu_user
+                f"Пожалуйста запишитесь на другой день.",
+                reply_markup=keyboard_menu.main_menu_user,
             )
             await state.finish()
 
-        elif 0 < len(time_applications) < 4:
-            for x in time_applications:
-                del time_check_btn[x[0]]
-
-            await callback_query.message.answer(
-                text='Выберите свободное время:',
-                reply_markup=time_btn.add(*[btn for key, btn in time_check_btn.items()])
-            )
-
-            await callback_query.message.delete()
-            await FSMClient.next()
-
         else:
+            for x in only_time:
+                del time_check_btn[x]
+
             await callback_query.message.answer(
-                text='Выберите свободное время:',
-                reply_markup=time_btn.add(*[btn for key, btn in time_check_btn.items()])
+                text="Выберите свободное время:",
+                reply_markup=time_btn.add(
+                    *[btn for key, btn in time_check_btn.items()]
+                ),
             )
 
             await callback_query.message.delete()
@@ -114,14 +114,15 @@ async def set_time(callback_query: types.CallbackQuery, state: FSMContext):
     """
     # Запись данных в "state".
     async with state.proxy() as data:
-        data['state_time'] = callback_query.data
+        data["state_time"] = callback_query.data
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.add(types.KeyboardButton(text="Отправить номер телефона 📱", request_contact=True))
+    keyboard.add(
+        types.KeyboardButton(text="Отправить номер телефона 📱", request_contact=True)
+    )
 
     await callback_query.message.answer(
-        text='Поделитесь номером телефона',
-        reply_markup=keyboard
+        text="Поделитесь номером телефона", reply_markup=keyboard
     )
 
     await FSMClient.next()
@@ -141,47 +142,56 @@ async def contacts(message: types.Message, state: FSMContext):
     # Запись данных в "state".
     async with state.proxy() as data:
         if message.text:
-            data['state_phone'] = message.text
+            data["state_phone"] = message.text
         else:
-            data['state_phone'] = message.contact.phone_number
+            data["state_phone"] = message.contact.phone_number
     await state.finish()
 
     # date : tuple(full_name: str, service: str, date: str, time: str, state_phone: str, id_user: str)
-    await sqlite_db.sql_add_application(date=(message.chat.full_name,
-                                              data["state_process"],
-                                              data["state_date"],
-                                              data['state_time'],
-                                              data['state_phone'],
-                                              message.chat.id
-                                              )
-                                        )
+    await db.sql_add_application(
+        async_session,
+        date=Applications(
+            full_name=message.chat.full_name,
+            service=data["state_process"],
+            date=data["state_date"],
+            time=data["state_time"],
+            number=data["state_phone"],
+            id_user=message.chat.id,
+        ),
+    )
 
-    await bot.send_message(message.chat.id,
-                           text=f'Запись осуществлена!\n '
-                                f'Имя: {message.chat.full_name}\n'
-                                f'Услуга: {data["state_process"]}\n'
-                                f'Дата: {data["state_date"]}\n'
-                                f'Время: {data["state_time"]}\n'
-                                f'Телефон: {data["state_phone"]}\n',
-                           reply_markup=keyboard_menu.main_menu_admin
-                           )
+    await bot.send_message(
+        message.chat.id,
+        text=f"Запись осуществлена!\n "
+        f"Имя: {message.chat.full_name}\n"
+        f'Услуга: {data["state_process"]}\n'
+        f'Дата: {data["state_date"]}\n'
+        f'Время: {data["state_time"]}\n'
+        f'Телефон: {data["state_phone"]}\n',
+        reply_markup=keyboard_menu.main_menu_admin,
+    )
 
-    await bot.send_message(chat_id=ID[0],
-                           text=f'Клиент:\n '
-                                f'id: {message.chat.id}\n '
-                                f'Имя: {message.chat.full_name}\n'
-                                f'Услуга: {data["state_process"]}\n'
-                                f'Дата: {data["state_date"]}\n'
-                                f'Время: {data["state_time"]}\n'
-                                f'Телефон: {data["state_phone"]}\n'
-                                f'User_name: @{message.chat.username}'
-                           )
+    await bot.send_message(
+        chat_id=ID[0],
+        text=f"Клиент:\n "
+        f"id: {message.chat.id}\n "
+        f"Имя: {message.chat.full_name}\n"
+        f'Услуга: {data["state_process"]}\n'
+        f'Дата: {data["state_date"]}\n'
+        f'Время: {data["state_time"]}\n'
+        f'Телефон: {data["state_phone"]}\n'
+        f"User_name: @{message.chat.username}",
+    )
 
 
 def register_handlers_client_service(dp: Dispatcher):
     dp.register_callback_query_handler(set_service, state=FSMClient.state_process)
-    dp.register_callback_query_handler(process_dialog_calendar, simple_cal_callback.filter())
+    dp.register_callback_query_handler(
+        process_dialog_calendar, simple_cal_callback.filter()
+    )
     dp.register_callback_query_handler(set_time, state=FSMClient.state_time)
-    dp.register_message_handler(contacts,
-                                content_types=[types.ContentType.CONTACT, types.ContentType.TEXT],
-                                state=FSMClient.state_phone)
+    dp.register_message_handler(
+        contacts,
+        content_types=[types.ContentType.CONTACT, types.ContentType.TEXT],
+        state=FSMClient.state_phone,
+    )

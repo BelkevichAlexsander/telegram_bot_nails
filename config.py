@@ -7,17 +7,20 @@ class Settings(BaseSettings):
     """
     Для подгрузки секретных ключей и иных значений
     """
+
     bot_token: SecretStr
-    id_admin_telegram_1: SecretStr
+    id_admin: SecretStr
+    db_connect: SecretStr
 
     class Config:
         """
         Вложенный класс с дополнительными указаниями для настроек.
         Получение данных из .env в переменные выше
         """
-        dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+
+        dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
         if os.path.exists(dotenv_path):
-            c = load_dotenv(dotenv_path)
+            load_dotenv(dotenv_path)
 
 
 # Валидация объекта конфига

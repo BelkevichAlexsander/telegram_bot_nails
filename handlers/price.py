@@ -15,7 +15,9 @@ async def price_from_main_menu(message: Message):
     :param message: types.Message
     :return: message.answer
     """
-    await message.answer(MESSAGES_PRICE['service'], reply_markup=keyboard_price.menu_key_price)
+    await message.answer(
+        MESSAGES_PRICE["service"], reply_markup=keyboard_price.menu_key_price
+    )
 
 
 # @dp.message_handler(commands=['Педикюр', 'Маникюр', 'Наращивание'])
@@ -26,31 +28,39 @@ async def menu_in_price(message: Message):
     :param message: types.Message
     :return: message.answer
     """
-    if message.text == 'Педикюр':
-        await message.answer(MESSAGES_PRICE['pedicure'], reply_markup=keyboard_price.menu_key_price)
-        await message.answer('Для записи к мастеру вернитесь в основное меню')
+    if message.text == "Педикюр":
+        await message.answer(
+            MESSAGES_PRICE["pedicure"], reply_markup=keyboard_price.menu_key_price
+        )
+        await message.answer("Для записи к мастеру вернитесь в основное меню")
 
-    if message.text == 'Маникюр':
-        await message.answer(MESSAGES_PRICE['manicure'], reply_markup=keyboard_price.menu_key_price)
-        await message.answer('Для записи к мастеру вернитесь в основное меню')
+    if message.text == "Маникюр":
+        await message.answer(
+            MESSAGES_PRICE["manicure"], reply_markup=keyboard_price.menu_key_price
+        )
+        await message.answer("Для записи к мастеру вернитесь в основное меню")
 
-    if message.text == 'Наращивание':
-        await message.answer(MESSAGES_PRICE['nail_extension'], reply_markup=keyboard_price.menu_key_price)
-        await message.answer('Для записи к мастеру вернитесь в основное меню')
+    if message.text == "Наращивание":
+        await message.answer(
+            MESSAGES_PRICE["nail_extension"], reply_markup=keyboard_price.menu_key_price
+        )
+        await message.answer("Для записи к мастеру вернитесь в основное меню")
 
-    if message.text == 'Возврат в меню':
+    if message.text == "Возврат в меню":
         if message.from_user.id in ID:
-            await message.answer('Меню', reply_markup=keyboard_menu.main_menu_admin)
+            await message.answer("Меню", reply_markup=keyboard_menu.main_menu_admin)
         else:
-            await message.answer('Меню', reply_markup=keyboard_menu.main_menu_user)
+            await message.answer("Меню", reply_markup=keyboard_menu.main_menu_user)
 
 
 def registration_handler_price(dp: Dispatcher):
-    dp.register_message_handler(price_from_main_menu, Text(equals=['Цены'], ignore_case=True))
+    dp.register_message_handler(
+        price_from_main_menu, Text(equals=["Цены"], ignore_case=True)
+    )
     dp.register_message_handler(
         menu_in_price,
         Text(
-            equals=['Педикюр', 'Маникюр', 'Наращивание', 'Возврат в меню'],
-            ignore_case=True
-        )
+            equals=["Педикюр", "Маникюр", "Наращивание", "Возврат в меню"],
+            ignore_case=True,
+        ),
     )

@@ -1,15 +1,15 @@
-january = 'Январь'
-february = 'Февраль'
-march = 'Март'
-april = 'Апрель'
-may = 'Май'
-june = 'Июнь'
-july = 'Июль'
-august = 'Август'
-september = 'Сентябрь'
-october = 'Октябрь'
-november = 'Ноябрь'
-december = 'Декабрь'
+january = "Январь"
+february = "Февраль"
+march = "Март"
+april = "Апрель"
+may = "Май"
+june = "Июнь"
+july = "Июль"
+august = "Август"
+september = "Сентябрь"
+october = "Октябрь"
+november = "Ноябрь"
+december = "Декабрь"
 
 MESSAGES_MONTH = {
     1: january,
@@ -23,5 +23,5 @@ MESSAGES_MONTH = {
     9: september,
     10: october,
     11: november,
-    12: december
+    12: december,
 }

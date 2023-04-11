@@ -2,8 +2,8 @@ import logging
 
 from aiogram.utils import executor
 
-from bot_config import dp
-from database import sqlite_db
+from bot_config import dp, engine_db
+from database import db
 from handlers import admin, menu_start, price, service
 
 logging.basicConfig(
@@ -13,13 +13,13 @@ logging.basicConfig(
 
 
 async def on_startup(_):
-    print('Бот вышел в онлайн')
-    sqlite_db.sql_start()
+    await db.create_db(engine=engine_db)
 
     menu_start.registration_handler_start_menu(dp=dp)
     service.register_handlers_client_service(dp=dp)
     price.registration_handler_price(dp=dp)
     admin.registration_handler_admin(dp=dp)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=on_startup)

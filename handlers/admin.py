@@ -2,8 +2,8 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.utils.exceptions import BotBlocked
 
-from bot_config import bot, ID
-from database import sqlite_db
+from bot_config import bot, ID, async_session
+from database import db
 from keyboard import keyboard_menu
 
 
@@ -16,9 +16,12 @@ async def select_all_user_handler(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        users: list = await sqlite_db.all_users('user')
-        await message.answer(text=f"{chr(10).join([str(x) for x in users])}",
-                             reply_markup=keyboard_menu.admin_menu)
+        users = await db.all_users(async_session=async_session)
+
+        await message.answer(
+            text=f"{chr(10).join(str(x) for x in users.scalars())}",
+            reply_markup=keyboard_menu.admin_menu,
+        )
 
 
 # @dp.message_handler(Text(equals=['Заказы'], ignore_case=True))
@@ -30,10 +33,11 @@ async def select_applications_handler(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        applications = await sqlite_db.applications_date()
-        await message.answer(f"{chr(10).join([str(x) for x in applications])}",
-                             reply_markup=keyboard_menu.admin_menu
-                             )
+        applications = await db.applications_date(async_session=async_session)
+        await message.answer(
+            f"{chr(10).join(str(x) for x in applications.scalars())}",
+            reply_markup=keyboard_menu.admin_menu,
+        )
 
 
 # @dp.message_handler(Text(equals=['Отправить сообщение всем пользователям бота'], ignore_case=True))
@@ -45,7 +49,7 @@ async def message_all_user_handler(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        await message.answer(text='Введи текст для всех пользователей Бота')
+        await message.answer(text="Введи текст для всех пользователей Бота")
 
 
 # @dp.message_handler()
@@ -57,23 +61,29 @@ async def spent_all_message(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        users = await sqlite_db.all_users('user')
-        for user in users:
+        users = await db.all_users(async_session=async_session)
+        for user in users.scalars():
             try:
-                await bot.send_message(user[0], text=f'Уважаемый(ая) {user[1]}.\n {message.text}')
+                await bot.send_message(
+                    user.id, text=f"Уважаемый(ая) {user.full_name}.\n {message.text}"
+                )
             except BotBlocked:
-                await message.answer(f"Blocked bot by {user[1]}")
-        await message.answer(f"Рассылка завершена! {len(users)} пользователям!")
-        await message.answer('Админ панель.', reply_markup=keyboard_menu.admin_menu)
+                await message.answer(f"Blocked bot by {user.full_name}")
+        await message.answer(f"Рассылка завершена! Всем пользователям!")
+        await message.answer("Админ панель.", reply_markup=keyboard_menu.admin_menu)
 
 
 # Регистрация для выноса в MAIN
 def registration_handler_admin(dp: Dispatcher):
-    dp.register_message_handler(select_all_user_handler, Text(equals=['Пользователи'], ignore_case=True))
-    dp.register_message_handler(select_applications_handler, Text(equals=['Заказы'], ignore_case=True))
-    dp.register_message_handler(message_all_user_handler,
-                                Text(equals=['Отправить сообщение всем пользователям бота'],
-                                     ignore_case=True)
-                                )
+    dp.register_message_handler(
+        select_all_user_handler, Text(equals=["Пользователи"], ignore_case=True)
+    )
+    dp.register_message_handler(
+        select_applications_handler, Text(equals=["Заказы"], ignore_case=True)
+    )
+    dp.register_message_handler(
+        message_all_user_handler,
+        Text(equals=["Отправить сообщение всем пользователям бота"], ignore_case=True),
+    )
 
     dp.register_message_handler(spent_all_message)
