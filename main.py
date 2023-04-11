@@ -13,7 +13,8 @@ logging.basicConfig(
 
 
 async def on_startup(_):
-    await db.create_db(engine=engine_db)
+    # Using Alembic
+    # await db.create_db(engine=engine_db)
 
     menu_start.registration_handler_start_menu(dp=dp)
     service.register_handlers_client_service(dp=dp)

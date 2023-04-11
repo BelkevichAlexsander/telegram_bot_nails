@@ -116,6 +116,8 @@ async def select_date_application(
         return await session.execute(request)
 
 
+@DeprecationWarning
 async def create_db(engine) -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # async with engine.begin() as conn:
+    #     await conn.run_sync(Base.metadata.create_all)
+    ...
