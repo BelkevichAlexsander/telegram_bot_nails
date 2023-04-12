@@ -19,28 +19,32 @@ async def command_start(message: types.Message):
     :param message: types.Message
     :return: message.answer
     """
+    users = await db.all_users(async_session=async_session)
+    users_id = (x.id for x in users.scalars())
     if message.from_user.id in ID:
-        await db.sql_add_user(
-            async_session,
-            user=Users(
-                id=message.from_user.id,
-                full_name=message.from_user.full_name,
-                admin=True,
-            ),
-        )
+        if message.from_user.id not in users_id:
+            await db.sql_add_user(
+                async_session,
+                user=Users(
+                    id=message.from_user.id,
+                    full_name=message.from_user.full_name,
+                    admin=True,
+                ),
+            )
         await message.answer(
             f"Hello admin {message.from_user.username}\nМеню",
             reply_markup=keyboard_menu.main_menu_admin,
         )
     else:
-        await db.sql_add_user(
-            async_session,
-            user=Users(
-                id=message.from_user.id,
-                full_name=message.from_user.full_name,
-                admin=False,
-            ),
-        )
+        if message.from_user.id in users_id:
+            await db.sql_add_user(
+                async_session,
+                user=Users(
+                    id=message.from_user.id,
+                    full_name=message.from_user.full_name,
+                    admin=False,
+                ),
+            )
         await message.answer("Вас приветствует бот салона красоты ...")
         await message.answer("Меню", reply_markup=keyboard_menu.main_menu_user)
 

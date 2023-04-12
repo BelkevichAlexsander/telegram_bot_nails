@@ -81,7 +81,7 @@ async def all_users(
     :return: None
     """
     async with async_session() as session:
-        request = select(Users).where(Users.admin == 0)
+        request = select(Users)
 
         return await session.execute(request)
 
