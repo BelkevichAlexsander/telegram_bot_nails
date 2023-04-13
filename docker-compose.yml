@@ -4,3 +4,12 @@ services:
   bot:
     container_name: tg_bot
     build: .
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    ports:
+      - "5430:5432"
