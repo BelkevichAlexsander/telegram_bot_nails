@@ -2,7 +2,7 @@ from aiogram import Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.types import Message
 
-from bot_config import ID
+from config import ID
 from keyboard import keyboard_price, keyboard_menu
 from message.price_message import MESSAGES_PRICE
 

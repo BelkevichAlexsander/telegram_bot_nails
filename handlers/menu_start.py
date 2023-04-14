@@ -1,9 +1,8 @@
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 
-from bot_config import ID, async_session
-from database import db
-from database.db import Users
+from config import ID
+from database import user
 from inline import entry_ikb
 from keyboard import keyboard_menu
 from message.contacts_message import MESSAGES_CONTACTS
@@ -19,13 +18,12 @@ async def command_start(message: types.Message):
     :param message: types.Message
     :return: message.answer
     """
-    users = await db.all_users(async_session=async_session)
+    users = await user.all_users()
     users_id = (x.id for x in users.scalars())
     if message.from_user.id in ID:
         if message.from_user.id not in users_id:
-            await db.sql_add_user(
-                async_session,
-                user=Users(
+            await user.sql_add_user(
+                user=user.Users(
                     id=message.from_user.id,
                     full_name=message.from_user.full_name,
                     admin=True,
@@ -37,9 +35,8 @@ async def command_start(message: types.Message):
         )
     else:
         if message.from_user.id in users_id:
-            await db.sql_add_user(
-                async_session,
-                user=Users(
+            await user.sql_add_user(
+                user=user.Users(
                     id=message.from_user.id,
                     full_name=message.from_user.full_name,
                     admin=False,

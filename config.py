@@ -1,6 +1,10 @@
-from pydantic import BaseSettings, SecretStr
-from dotenv import load_dotenv
+import asyncio
 import os
+
+from aiogram import Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from dotenv import load_dotenv
+from pydantic import BaseSettings, SecretStr
 
 
 class Settings(BaseSettings):
@@ -25,3 +29,15 @@ class Settings(BaseSettings):
 
 # Валидация объекта конфига
 config = Settings()
+
+# ADMIN ID
+ID = [
+    int(config.id_admin.get_secret_value()),
+    # int(config.config.id_admin_telegram_2.get_secret_value())
+]
+
+loop = asyncio.get_event_loop()
+storage = MemoryStorage()
+
+bot = Bot(token=config.bot_token.get_secret_value())
+dp = Dispatcher(bot=bot, storage=storage, loop=loop)

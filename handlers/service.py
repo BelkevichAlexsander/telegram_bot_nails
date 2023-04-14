@@ -4,10 +4,9 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
-from bot_config import bot, ID, async_session
+from config import bot, ID
 from calendar_async import simple_cal_callback, SimpleCalendar
-from database import db
-from database.db import Applications
+from database import application
 from inline import time_ikb
 from keyboard import keyboard_menu
 
@@ -72,8 +71,8 @@ async def process_dialog_calendar(
             data["state_date"] = date.strftime("%d.%m.%Y")
 
         # Получение данных о записях в определенную дату
-        time_applications = await db.select_date_application(
-            date.strftime("%d.%m.%Y"), async_session=async_session
+        time_applications = await application.select_date_application(
+            date.strftime("%d.%m.%Y")
         )
         only_time: list = [x.time for x in time_applications.scalars()]
 
@@ -148,9 +147,8 @@ async def contacts(message: types.Message, state: FSMContext):
     await state.finish()
 
     # date : tuple(full_name: str, service: str, date: str, time: str, state_phone: str, id_user: str)
-    await db.sql_add_application(
-        async_session,
-        date=Applications(
+    await application.sql_add_application(
+        date=application.Applications(
             full_name=message.chat.full_name,
             service=data["state_process"],
             date=data["state_date"],

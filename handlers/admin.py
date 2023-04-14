@@ -2,8 +2,8 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import Text
 from aiogram.utils.exceptions import BotBlocked
 
-from bot_config import bot, ID, async_session
-from database import db
+from config import bot, ID
+from database import user, application
 from keyboard import keyboard_menu
 
 
@@ -16,7 +16,7 @@ async def select_all_user_handler(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        users = await db.all_users(async_session=async_session)
+        users = await user.all_users()
 
         await message.answer(
             text=f"{chr(10).join(str(x) for x in users.scalars())}",
@@ -33,7 +33,7 @@ async def select_applications_handler(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        applications = await db.applications_date(async_session=async_session)
+        applications = await application.applications_date()
         await message.answer(
             f"{chr(10).join(str(x) for x in applications.scalars())}",
             reply_markup=keyboard_menu.admin_menu,
@@ -61,14 +61,15 @@ async def spent_all_message(message: types.Message):
     :return: message.answer
     """
     if message.from_user.id in ID:
-        users = await db.all_users(async_session=async_session)
-        for user in users.scalars():
+        users = await user.all_users()
+        for user_s in users.scalars():
             try:
                 await bot.send_message(
-                    user.id, text=f"Уважаемый(ая) {user.full_name}.\n {message.text}"
+                    user_s.id,
+                    text=f"Уважаемый(ая) {user_s.full_name}.\n {message.text}",
                 )
             except BotBlocked:
-                await message.answer(f"Blocked bot by {user.full_name}")
+                await message.answer(f"Blocked bot by {user_s.full_name}")
         await message.answer(f"Рассылка завершена! Всем пользователям!")
         await message.answer("Админ панель.", reply_markup=keyboard_menu.admin_menu)
 

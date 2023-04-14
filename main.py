@@ -2,8 +2,7 @@ import logging
 
 from aiogram.utils import executor
 
-from bot_config import dp, engine_db
-from database import db
+from config import dp
 from handlers import admin, menu_start, price, service
 
 logging.basicConfig(
@@ -13,9 +12,6 @@ logging.basicConfig(
 
 
 async def on_startup(_):
-    # Using Alembic
-    # await db.create_db(engine=engine_db)
-
     menu_start.registration_handler_start_menu(dp=dp)
     service.register_handlers_client_service(dp=dp)
     price.registration_handler_price(dp=dp)
