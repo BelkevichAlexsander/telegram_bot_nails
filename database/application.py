@@ -1,7 +1,8 @@
-from sqlalchemy import ForeignKey, Result, ChunkedIteratorResult, select
+from sqlalchemy import Result, ChunkedIteratorResult, select, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from database.Base import Base, AsyncSessionLocal
+from .base_model import Base
+from .config_db import AsyncSessionLocal
 
 
 class Applications(Base):

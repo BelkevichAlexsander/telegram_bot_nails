@@ -3,7 +3,8 @@ from typing import Any
 from sqlalchemy import Result, select
 from sqlalchemy.orm import Mapped, mapped_column
 
-from database.Base import Base, AsyncSessionLocal
+from database.base_model import Base
+from .config_db import AsyncSessionLocal
 
 
 class Users(Base):
